@@ -5,7 +5,7 @@
 #include "pthread.h"
 
 #include "additionally.h"
-
+#include "sys/stat.h"
 #ifdef OPENCV
 #include "opencv2/highgui/highgui_c.h"
 #include "opencv2/core/core_c.h"
@@ -81,7 +81,7 @@ void draw_detections_cpu(image im, int num, float thresh, box *boxes, float **pr
 
 
 // Detect on Image: this function uses other functions not from this file
-void test_detector_cpu(char **names, char *cfgfile, char *weightfile, char *filename, float thresh)
+void test_detector_cpu(char **names, char *cfgfile, char *weightfile, char *filename, float thresh, char *foldername)
 {
 	//image **alphabet = load_alphabet();			// image.c
 	image **alphabet = NULL;
@@ -94,11 +94,15 @@ void test_detector_cpu(char **names, char *cfgfile, char *weightfile, char *file
 	clock_t time;
 	char buff[256];
 	char *input = buff;
+
+	char folder_buff[256];
+	char *folder = folder_buff;
 	int j;
 	float nms = .4;
 	while (1) {
 		if (filename) {
 			strncpy(input, filename, 256);
+			strncpy(folder, foldername, 256);
 		}
 		else {
 			printf("Enter Image Path: ");
@@ -107,8 +111,12 @@ void test_detector_cpu(char **names, char *cfgfile, char *weightfile, char *file
 			if (!input) return;
 			strtok(input, "\n");
 		}
+        char path[200];
+        sprintf(path, "./data/%s/", net.filename);
+        int result =  mkdir(path,S_IRWXU);
 		image im = load_image(input, 0, 0, 3);			// image.c
 		image sized = resize_image(im, net.w, net.h);	// image.c
+		net.filename = folder;
 		layer l = net.layers[net.n - 1];
 
 		box *boxes = calloc(l.w*l.h*l.n, sizeof(box));
@@ -432,6 +440,7 @@ void run_detector(int argc, char **argv)
 	char *cfg = argv[4];
 	char *weights = (argc > 5) ? argv[5] : 0;
 	char *filename = (argc > 6) ? argv[6] : 0;
+	char *foldername = (argc > 7) ? argv[7] : 0;
 
 	// load object names
 	char **names = calloc(10000, sizeof(char *));
@@ -448,7 +457,7 @@ void run_detector(int argc, char **argv)
 	fclose(fp);
 	int classes = obj_count;
 
-	if (0 == strcmp(argv[2], "test")) test_detector_cpu(names, cfg, weights, filename, thresh);
+	if (0 == strcmp(argv[2], "test")) test_detector_cpu(names, cfg, weights, filename, thresh, foldername);
 	//else if (0 == strcmp(argv[2], "train")) train_detector(datacfg, cfg, weights, gpus, ngpus, clear);
 	//else if (0 == strcmp(argv[2], "valid")) validate_detector(datacfg, cfg, weights);
 	//else if (0 == strcmp(argv[2], "recall")) validate_detector_recall(datacfg, cfg, weights);

@@ -507,6 +507,7 @@ typedef enum {
 } learning_rate_policy;
 
 typedef struct network {
+	char *filename;
 	float *workspace;
 	int n;
 	int batch;
